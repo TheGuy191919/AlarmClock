@@ -1,0 +1,100 @@
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="/static/painterro-0.2.6.min.js"></script>
+  </head>
+  <body>
+	<div id="icon">
+	  
+	</div>
+    <div id="date">
+	</div>
+    <div id="clock">
+	</div>
+    <div id="status">
+	</div>
+    <div id="temp">
+	  23F
+	</div>
+    <div id="draw">
+    </div>
+<script>
+  Painterro({
+    'id':'draw',
+    'hiddenTools':['crop', 'text', 'rotate', 'resize', 'save', 'open', 'close']
+  }).show();
+</script>
+	<script>
+
+var daysBetween = function( date1, date2 ) {
+  //Get 1 day in milliseconds
+  var one_day=1000*60*60*24;
+
+  // Convert both dates to milliseconds
+  var date1_ms = date1.getTime();
+  var date2_ms = date2.getTime();
+
+  // Calculate the difference in milliseconds
+  var difference_ms = date2_ms - date1_ms;
+    
+  // Convert back to days and return
+  return Math.round(difference_ms/one_day); 
+}
+
+
+	  //document.getElementById("demo").innerHTML = "Hello JavaScript!";
+
+          var updateDate = function() {
+            $.get("/time", function (data, status) {
+                  var date = new Date(parseInt(data.time));
+                  document.getElementById('date').innerHTML = $.datepicker.formatDate('M dd, yy', date);
+                  $.get("/pillStatus", function (data, status) {
+                    var lastPillDate = new Date(parseInt(data.time));
+                    console.log(date);
+                    console.log(lastPillDate);
+                    if (date.getYear() == lastPillDate.getYear() && date.getMonth() == lastPillDate.getMonth() && date.getDate() == lastPillDate.getDate()) {
+                      document.getElementById('status').innerHTML = "  ";
+                    } else {
+                      document.getElementById('status').innerHTML = "Pill not taken today.";
+                    }
+                  });
+		});
+          };
+          var padding = function(num) {
+            while (("" + num).length < 2) {
+                num = "0" + num;
+            }
+            return num;
+          };
+document.getElementById("status").addEventListener("click", function() {
+  $.get("/pillSet", function (data, status) {
+    updateDate();
+  });
+});
+updateDate();
+	  window.setInterval(function() {
+	    updateDate();
+	  }, 10*60*1000);
+
+var updateWeather = function() {
+  $.get("http://api.wunderground.com/api/26f5c92e859a8d26/conditions/q/MA/Boston.json", function (data, status) {
+    document.getElementById('temp').innerHTML = data.current_observation.temp_f + "F";
+    document.getElementById('icon').style['background-image'] = 'url(' + data.current_observation.icon_url + ')';
+  });
+};
+window.setInterval(updateWeather(), 10*60*1000);
+//updateWeather();
+	  window.setInterval(function() {
+	    $.get("/time", function (data, status) {
+                  var date = new Date(parseInt(data.time));
+                  document.getElementById('clock').innerHTML = "" + padding(date.getHours()) + ":" + padding(date.getMinutes()) + "<br>" + padding(date.getSeconds());
+                  if (date.getHours() == 0 && date.getMinutes() <= 1) {
+                    updateDate();
+                  }
+		});
+	  }, 1000);
+	</script>
+  </body>
+</html>
